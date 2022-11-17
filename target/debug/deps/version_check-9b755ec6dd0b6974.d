@@ -1,0 +1,10 @@
+d:\Projects\Rust\ash_rt\target\debug\deps\version_check-9b755ec6dd0b6974.rmeta: C:\Users\andy_\.cargo\registry\src\mirrors.tuna.tsinghua.edu.cn-df7c3c540f42cdbd\version_check-0.9.4\src\lib.rs C:\Users\andy_\.cargo\registry\src\mirrors.tuna.tsinghua.edu.cn-df7c3c540f42cdbd\version_check-0.9.4\src\version.rs C:\Users\andy_\.cargo\registry\src\mirrors.tuna.tsinghua.edu.cn-df7c3c540f42cdbd\version_check-0.9.4\src\channel.rs C:\Users\andy_\.cargo\registry\src\mirrors.tuna.tsinghua.edu.cn-df7c3c540f42cdbd\version_check-0.9.4\src\date.rs
+
+d:\Projects\Rust\ash_rt\target\debug\deps\libversion_check-9b755ec6dd0b6974.rlib: C:\Users\andy_\.cargo\registry\src\mirrors.tuna.tsinghua.edu.cn-df7c3c540f42cdbd\version_check-0.9.4\src\lib.rs C:\Users\andy_\.cargo\registry\src\mirrors.tuna.tsinghua.edu.cn-df7c3c540f42cdbd\version_check-0.9.4\src\version.rs C:\Users\andy_\.cargo\registry\src\mirrors.tuna.tsinghua.edu.cn-df7c3c540f42cdbd\version_check-0.9.4\src\channel.rs C:\Users\andy_\.cargo\registry\src\mirrors.tuna.tsinghua.edu.cn-df7c3c540f42cdbd\version_check-0.9.4\src\date.rs
+
+d:\Projects\Rust\ash_rt\target\debug\deps\version_check-9b755ec6dd0b6974.d: C:\Users\andy_\.cargo\registry\src\mirrors.tuna.tsinghua.edu.cn-df7c3c540f42cdbd\version_check-0.9.4\src\lib.rs C:\Users\andy_\.cargo\registry\src\mirrors.tuna.tsinghua.edu.cn-df7c3c540f42cdbd\version_check-0.9.4\src\version.rs C:\Users\andy_\.cargo\registry\src\mirrors.tuna.tsinghua.edu.cn-df7c3c540f42cdbd\version_check-0.9.4\src\channel.rs C:\Users\andy_\.cargo\registry\src\mirrors.tuna.tsinghua.edu.cn-df7c3c540f42cdbd\version_check-0.9.4\src\date.rs
+
+C:\Users\andy_\.cargo\registry\src\mirrors.tuna.tsinghua.edu.cn-df7c3c540f42cdbd\version_check-0.9.4\src\lib.rs:
+C:\Users\andy_\.cargo\registry\src\mirrors.tuna.tsinghua.edu.cn-df7c3c540f42cdbd\version_check-0.9.4\src\version.rs:
+C:\Users\andy_\.cargo\registry\src\mirrors.tuna.tsinghua.edu.cn-df7c3c540f42cdbd\version_check-0.9.4\src\channel.rs:
+C:\Users\andy_\.cargo\registry\src\mirrors.tuna.tsinghua.edu.cn-df7c3c540f42cdbd\version_check-0.9.4\src\date.rs:

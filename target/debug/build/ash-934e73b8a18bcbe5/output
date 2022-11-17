@@ -1,0 +1,3 @@
+cargo:rerun-if-env-changed=VULKAN_SDK
+cargo:rustc-link-search=D:\Software\Vulkan SDK\/Lib
+cargo:rustc-link-lib=vulkan-1

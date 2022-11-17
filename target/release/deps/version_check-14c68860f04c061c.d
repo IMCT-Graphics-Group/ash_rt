@@ -1,0 +1,10 @@
+D:\Projects\Rust\ash_rt\target\release\deps\version_check-14c68860f04c061c.rmeta: C:\Users\andy_\.cargo\registry\src\mirrors.tuna.tsinghua.edu.cn-df7c3c540f42cdbd\version_check-0.9.4\src\lib.rs C:\Users\andy_\.cargo\registry\src\mirrors.tuna.tsinghua.edu.cn-df7c3c540f42cdbd\version_check-0.9.4\src\version.rs C:\Users\andy_\.cargo\registry\src\mirrors.tuna.tsinghua.edu.cn-df7c3c540f42cdbd\version_check-0.9.4\src\channel.rs C:\Users\andy_\.cargo\registry\src\mirrors.tuna.tsinghua.edu.cn-df7c3c540f42cdbd\version_check-0.9.4\src\date.rs
+
+D:\Projects\Rust\ash_rt\target\release\deps\libversion_check-14c68860f04c061c.rlib: C:\Users\andy_\.cargo\registry\src\mirrors.tuna.tsinghua.edu.cn-df7c3c540f42cdbd\version_check-0.9.4\src\lib.rs C:\Users\andy_\.cargo\registry\src\mirrors.tuna.tsinghua.edu.cn-df7c3c540f42cdbd\version_check-0.9.4\src\version.rs C:\Users\andy_\.cargo\registry\src\mirrors.tuna.tsinghua.edu.cn-df7c3c540f42cdbd\version_check-0.9.4\src\channel.rs C:\Users\andy_\.cargo\registry\src\mirrors.tuna.tsinghua.edu.cn-df7c3c540f42cdbd\version_check-0.9.4\src\date.rs
+
+D:\Projects\Rust\ash_rt\target\release\deps\version_check-14c68860f04c061c.d: C:\Users\andy_\.cargo\registry\src\mirrors.tuna.tsinghua.edu.cn-df7c3c540f42cdbd\version_check-0.9.4\src\lib.rs C:\Users\andy_\.cargo\registry\src\mirrors.tuna.tsinghua.edu.cn-df7c3c540f42cdbd\version_check-0.9.4\src\version.rs C:\Users\andy_\.cargo\registry\src\mirrors.tuna.tsinghua.edu.cn-df7c3c540f42cdbd\version_check-0.9.4\src\channel.rs C:\Users\andy_\.cargo\registry\src\mirrors.tuna.tsinghua.edu.cn-df7c3c540f42cdbd\version_check-0.9.4\src\date.rs
+
+C:\Users\andy_\.cargo\registry\src\mirrors.tuna.tsinghua.edu.cn-df7c3c540f42cdbd\version_check-0.9.4\src\lib.rs:
+C:\Users\andy_\.cargo\registry\src\mirrors.tuna.tsinghua.edu.cn-df7c3c540f42cdbd\version_check-0.9.4\src\version.rs:
+C:\Users\andy_\.cargo\registry\src\mirrors.tuna.tsinghua.edu.cn-df7c3c540f42cdbd\version_check-0.9.4\src\channel.rs:
+C:\Users\andy_\.cargo\registry\src\mirrors.tuna.tsinghua.edu.cn-df7c3c540f42cdbd\version_check-0.9.4\src\date.rs:
