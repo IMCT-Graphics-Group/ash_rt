@@ -217,51 +217,68 @@ pub fn create_logical_device(
         queue_create_infos.push(queue_create_info);
     }
 
-    let physical_device_features = vk::PhysicalDeviceFeatures {
-        sampler_anisotropy: vk::TRUE,
-        ..Default::default()
-    };
+    // let physical_device_features = vk::PhysicalDeviceFeatures {
+    //     sampler_anisotropy: vk::TRUE,
+    //     ..Default::default()
+    // };
+    unsafe {
+        let features2 = instance.get_physical_device_features(physical_device);
+        let mut descriptor_indexing = vk::PhysicalDeviceDescriptorIndexingFeaturesEXT::builder()
+            .descriptor_binding_variable_descriptor_count(true)
+            .runtime_descriptor_array(true)
+            .build();
+        let mut scalar_block = vk::PhysicalDeviceScalarBlockLayoutFeaturesEXT::builder()
+            .scalar_block_layout(true)
+            .build();
 
-    let required_validation_layer_raw_names: Vec<CString> = validation
-        .required_validation_layers
-        .iter()
-        .map(|layer_name| CString::new(*layer_name).unwrap())
-        .collect();
-    let enable_layer_names: Vec<*const c_char> = required_validation_layer_raw_names
-        .iter()
-        .map(|layer_name| layer_name.as_ptr())
-        .collect();
+        let required_validation_layer_raw_names: Vec<CString> = validation
+            .required_validation_layers
+            .iter()
+            .map(|layer_name| CString::new(*layer_name).unwrap())
+            .collect();
+        let enable_layer_names: Vec<*const c_char> = required_validation_layer_raw_names
+            .iter()
+            .map(|layer_name| layer_name.as_ptr())
+            .collect();
 
-    let enable_extension_names = device_extension.get_extensions_raw_names();
+        let enable_extension_names = device_extension.get_extensions_raw_names();
 
-    let device_create_info = vk::DeviceCreateInfo {
-        s_type: vk::StructureType::DEVICE_CREATE_INFO,
-        p_next: ptr::null(),
-        flags: vk::DeviceCreateFlags::empty(),
-        queue_create_info_count: queue_create_infos.len() as u32,
-        p_queue_create_infos: queue_create_infos.as_ptr(),
-        enabled_layer_count: if validation.is_enable {
-            enable_layer_names.len()
-        } else {
-            0
-        } as u32,
-        pp_enabled_layer_names: if validation.is_enable {
-            enable_layer_names.as_ptr()
-        } else {
-            ptr::null()
-        },
-        enabled_extension_count: enable_extension_names.len() as u32,
-        pp_enabled_extension_names: enable_extension_names.as_ptr(),
-        p_enabled_features: &physical_device_features,
-    };
+        // let device_create_info = vk::DeviceCreateInfo {
+        //     s_type: vk::StructureType::DEVICE_CREATE_INFO,
+        //     p_next: ptr::null(),
+        //     flags: vk::DeviceCreateFlags::empty(),
+        //     queue_create_info_count: queue_create_infos.len() as u32,
+        //     p_queue_create_infos: queue_create_infos.as_ptr(),
+        //     enabled_layer_count: if validation.is_enable {
+        //         enable_layer_names.len()
+        //     } else {
+        //         0
+        //     } as u32,
+        //     pp_enabled_layer_names: if validation.is_enable {
+        //         enable_layer_names.as_ptr()
+        //     } else {
+        //         ptr::null()
+        //     },
+        //     enabled_extension_count: enable_extension_names.len() as u32,
+        //     pp_enabled_extension_names: enable_extension_names.as_ptr(),
+        //     p_enabled_features: &features2,
+        // };
+        let device_create_info = vk::DeviceCreateInfo::builder()
+            .queue_create_infos(&queue_create_infos)
+            .enabled_extension_names(&enable_extension_names)
+            .enabled_features(&features2)
+            .push_next(&mut scalar_block)
+            .push_next(&mut descriptor_indexing)
+            .build();
 
-    let device: ash::Device = unsafe {
-        instance
-            .create_device(physical_device, &device_create_info, None)
-            .expect("Failed to create logical Device!")
-    };
+        let device: ash::Device = unsafe {
+            instance
+                .create_device(physical_device, &device_create_info, None)
+                .expect("Failed to create logical Device!")
+        };
 
-    (device, indices)
+        (device, indices)
+    }
 }
 
 fn find_queue_family(

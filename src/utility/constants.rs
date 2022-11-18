@@ -27,8 +27,14 @@ pub const DEVICE_EXTENSIONS: DeviceExtension = DeviceExtension {
 };
 
 impl DeviceExtension {
-    pub fn get_extensions_raw_names(&self) -> [*const c_char; 1] {
-        [ash::extensions::khr::Swapchain::name().as_ptr()]
+    pub fn get_extensions_raw_names(&self) -> [*const c_char; 5] {
+        [
+            ash::extensions::khr::Swapchain::name().as_ptr(),
+            ash::extensions::nv::RayTracing::name().as_ptr(),
+            vk::ExtDescriptorIndexingFn::name().as_ptr(),
+            vk::ExtScalarBlockLayoutFn::name().as_ptr(),
+            vk::KhrGetMemoryRequirements2Fn::name().as_ptr(),
+        ]
     }
 }
 

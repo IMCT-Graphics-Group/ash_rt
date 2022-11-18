@@ -1021,7 +1021,8 @@ impl RayTracingApp {
             ];
 
             let vertex_count = vertices.len();
-            let vertex_stride = std::mem::size_of::<Vertex>();
+            let vertex_stride = std::mem::size_of::<VertexRt>();
+
             let vertex_buffer_size = vertex_stride * vertex_count;
             let mut vertex_buffer = BufferResource::new(
                 vertex_buffer_size as u64,
@@ -1064,24 +1065,10 @@ impl RayTracingApp {
                 .flags(vk::GeometryFlagsNV::OPAQUE)
                 .build()];
 
+            println!("Geometry: {:?}", geometry.len());
             // Create bottom-level acceleration structure
-            let bottom_as_info = vk::AccelerationStructureInfoNV {
-                s_type: vk::StructureType::ACCELERATION_STRUCTURE_INFO_NV,
-                p_next: ptr::null(),
-                ty: vk::AccelerationStructureTypeNV::BOTTOM_LEVEL,
-                geometry_count: geometry.len() as u32,
-                p_geometries: geometry.as_ptr(),
-                flags: vk::BuildAccelerationStructureFlagsNV::PREFER_FAST_TRACE,
-                ..Default::default()
-            };
 
-            // let bottom_as_create_info = vk::AccelerationStructureCreateInfoNV {
-            //     s_type: vk::StructureType::ACCELERATION_STRUCTURE_CREATE_INFO_NV,
-            //     p_next: ptr::null(),
-            //     compacted_size: 0,
-            //     info: bottom_as_info,
-            // };
-            let bottom_as_create_info = vk::AccelerationStructureCreateInfoNV::builder()
+            let accel_info = vk::AccelerationStructureCreateInfoNV::builder()
                 .compacted_size(0)
                 .info(
                     vk::AccelerationStructureInfoNV::builder()
@@ -1094,52 +1081,111 @@ impl RayTracingApp {
 
             self.bottom_as = self
                 .ray_tracing
-                .create_acceleration_structure(&bottom_as_create_info, None)
-                .expect("Failed to create bottom AS.");
+                .create_acceleration_structure(&accel_info, None)
+                .unwrap();
 
-            let bottom_as_memory_requirements_info =
-                vk::AccelerationStructureMemoryRequirementsInfoNV {
-                    s_type: vk::StructureType::ACCELERATION_STRUCTURE_MEMORY_REQUIREMENTS_INFO_NV,
-                    p_next: ptr::null(),
-                    acceleration_structure: self.bottom_as,
-                    ty: vk::AccelerationStructureMemoryRequirementsTypeNV::OBJECT,
-                };
-
-            let bottom_as_memory_requirements = self
+            let memory_requirements = self
                 .ray_tracing
                 .get_acceleration_structure_memory_requirements(
-                    &bottom_as_memory_requirements_info,
+                    &vk::AccelerationStructureMemoryRequirementsInfoNV::builder()
+                        .acceleration_structure(self.bottom_as)
+                        .ty(vk::AccelerationStructureMemoryRequirementsTypeNV::OBJECT)
+                        .build(),
                 );
-
-            let bottom_as_memory_allocate_info = vk::MemoryAllocateInfo {
-                s_type: vk::StructureType::MEMORY_ALLOCATE_INFO,
-                p_next: ptr::null(),
-                allocation_size: bottom_as_memory_requirements.memory_requirements.size,
-                memory_type_index: utility::general::find_memorytype_index(
-                    &bottom_as_memory_requirements.memory_requirements,
-                    &self.base.memory_properties,
-                    vk::MemoryPropertyFlags::DEVICE_LOCAL,
-                )
-                .expect("Failed to find suitable AS memory type."),
-            };
 
             self.bottom_as_memory = self
                 .base
                 .device
-                .allocate_memory(&bottom_as_memory_allocate_info, None)
-                .expect("Failed to allocate AS memory.");
-
-            let bind_bottom_as_memory_infos = [vk::BindAccelerationStructureMemoryInfoNV {
-                s_type: vk::StructureType::BIND_ACCELERATION_STRUCTURE_MEMORY_INFO_NV,
-                p_next: ptr::null(),
-                acceleration_structure: self.bottom_as,
-                memory: self.bottom_as_memory,
-                ..Default::default()
-            }];
+                .allocate_memory(
+                    &vk::MemoryAllocateInfo::builder()
+                        .allocation_size(memory_requirements.memory_requirements.size)
+                        .memory_type_index(
+                            utility::general::find_memorytype_index(
+                                &memory_requirements.memory_requirements,
+                                &self.base.memory_properties,
+                                vk::MemoryPropertyFlags::DEVICE_LOCAL,
+                            )
+                            .unwrap(),
+                        )
+                        .build(),
+                    None,
+                )
+                .unwrap();
 
             self.ray_tracing
-                .bind_acceleration_structure_memory(&bind_bottom_as_memory_infos)
-                .expect("Failed to bind AS memory.");
+                .bind_acceleration_structure_memory(&[
+                    vk::BindAccelerationStructureMemoryInfoNV::builder()
+                        .acceleration_structure(self.bottom_as)
+                        .memory(self.bottom_as_memory)
+                        .build(),
+                ])
+                .unwrap();
+
+            // let bottom_as_info = vk::AccelerationStructureInfoNV {
+            //     s_type: vk::StructureType::ACCELERATION_STRUCTURE_INFO_NV,
+            //     p_next: ptr::null(),
+            //     ty: vk::AccelerationStructureTypeNV::BOTTOM_LEVEL,
+            //     geometry_count: geometry.len() as u32,
+            //     p_geometries: geometry.as_ptr(),
+            //     flags: vk::BuildAccelerationStructureFlagsNV::PREFER_FAST_TRACE,
+            //     ..Default::default()
+            // };
+
+            // let bottom_as_create_info = vk::AccelerationStructureCreateInfoNV {
+            //     s_type: vk::StructureType::ACCELERATION_STRUCTURE_CREATE_INFO_NV,
+            //     p_next: ptr::null(),
+            //     compacted_size: 0,
+            //     info: bottom_as_info,
+            // };
+
+            // self.bottom_as = self
+            //     .ray_tracing
+            //     .create_acceleration_structure(&bottom_as_create_info, None)
+            //     .expect("Failed to create bottom AS.");
+
+            // let bottom_as_memory_requirements_info =
+            //     vk::AccelerationStructureMemoryRequirementsInfoNV {
+            //         s_type: vk::StructureType::ACCELERATION_STRUCTURE_MEMORY_REQUIREMENTS_INFO_NV,
+            //         p_next: ptr::null(),
+            //         acceleration_structure: self.bottom_as,
+            //         ty: vk::AccelerationStructureMemoryRequirementsTypeNV::OBJECT,
+            //     };
+
+            // let bottom_as_memory_requirements = self
+            //     .ray_tracing
+            //     .get_acceleration_structure_memory_requirements(
+            //         &bottom_as_memory_requirements_info,
+            //     );
+
+            // let bottom_as_memory_allocate_info = vk::MemoryAllocateInfo {
+            //     s_type: vk::StructureType::MEMORY_ALLOCATE_INFO,
+            //     p_next: ptr::null(),
+            //     allocation_size: bottom_as_memory_requirements.memory_requirements.size,
+            //     memory_type_index: utility::general::find_memorytype_index(
+            //         &bottom_as_memory_requirements.memory_requirements,
+            //         &self.base.memory_properties,
+            //         vk::MemoryPropertyFlags::DEVICE_LOCAL,
+            //     )
+            //     .expect("Failed to find suitable AS memory type."),
+            // };
+
+            // self.bottom_as_memory = self
+            //     .base
+            //     .device
+            //     .allocate_memory(&bottom_as_memory_allocate_info, None)
+            //     .expect("Failed to allocate AS memory.");
+
+            // let bind_bottom_as_memory_infos = [vk::BindAccelerationStructureMemoryInfoNV {
+            //     s_type: vk::StructureType::BIND_ACCELERATION_STRUCTURE_MEMORY_INFO_NV,
+            //     p_next: ptr::null(),
+            //     acceleration_structure: self.bottom_as,
+            //     memory: self.bottom_as_memory,
+            //     ..Default::default()
+            // }];
+
+            // self.ray_tracing
+            //     .bind_acceleration_structure_memory(&bind_bottom_as_memory_infos)
+            //     .expect("Failed to bind AS memory.");
 
             // Create instance buffer
 
@@ -1195,67 +1241,139 @@ impl RayTracingApp {
 
             // Create top-level acceleration structure
 
-            let top_as_create_info = vk::AccelerationStructureCreateInfoNV {
-                s_type: vk::StructureType::ACCELERATION_STRUCTURE_CREATE_INFO_NV,
-                p_next: ptr::null(),
-                compacted_size: 0,
-                info: vk::AccelerationStructureInfoNV::builder()
-                    .ty(vk::AccelerationStructureTypeNV::TOP_LEVEL)
-                    .instance_count(instances.len() as u32)
-                    .build(),
-            };
+            let accel_info = vk::AccelerationStructureCreateInfoNV::builder()
+                .compacted_size(0)
+                .info(
+                    vk::AccelerationStructureInfoNV::builder()
+                        .ty(vk::AccelerationStructureTypeNV::TOP_LEVEL)
+                        .instance_count(instances.len() as u32)
+                        .build(),
+                )
+                .build();
 
             self.top_as = self
                 .ray_tracing
-                .create_acceleration_structure(&top_as_create_info, None)
-                .expect("Failed to create top AS.");
+                .create_acceleration_structure(&accel_info, None)
+                .unwrap();
 
-            let top_as_memory_requirements_info =
-                vk::AccelerationStructureMemoryRequirementsInfoNV {
-                    s_type: vk::StructureType::ACCELERATION_STRUCTURE_MEMORY_REQUIREMENTS_INFO_NV,
-                    p_next: ptr::null(),
-                    ty: vk::AccelerationStructureMemoryRequirementsTypeNV::OBJECT,
-                    acceleration_structure: self.top_as,
-                };
-
-            let top_as_memory_requirements = self
+            let memory_requirements = self
                 .ray_tracing
-                .get_acceleration_structure_memory_requirements(&top_as_memory_requirements_info);
-
-            let top_as_memory_allocate_info = vk::MemoryAllocateInfo {
-                s_type: vk::StructureType::MEMORY_ALLOCATE_INFO,
-                p_next: ptr::null(),
-                allocation_size: top_as_memory_requirements.memory_requirements.size,
-                memory_type_index: utility::general::find_memorytype_index(
-                    &top_as_memory_requirements.memory_requirements,
-                    &self.base.memory_properties,
-                    vk::MemoryPropertyFlags::DEVICE_LOCAL,
-                )
-                .expect("Failed to find suitable AS memory type."),
-            };
+                .get_acceleration_structure_memory_requirements(
+                    &vk::AccelerationStructureMemoryRequirementsInfoNV::builder()
+                        .acceleration_structure(self.top_as)
+                        .ty(vk::AccelerationStructureMemoryRequirementsTypeNV::OBJECT)
+                        .build(),
+                );
 
             self.top_as_memory = self
                 .base
                 .device
-                .allocate_memory(&top_as_memory_allocate_info, None)
-                .expect("Failed to allocate AS memory");
-
-            let bind_top_as_memory_infos = [vk::BindAccelerationStructureMemoryInfoNV {
-                s_type: vk::StructureType::BIND_ACCELERATION_STRUCTURE_MEMORY_INFO_NV,
-                acceleration_structure: self.top_as,
-                memory: self.top_as_memory,
-                ..Default::default()
-            }];
+                .allocate_memory(
+                    &vk::MemoryAllocateInfo::builder()
+                        .allocation_size(memory_requirements.memory_requirements.size)
+                        .memory_type_index(
+                            utility::general::find_memorytype_index(
+                                &memory_requirements.memory_requirements,
+                                &self.base.memory_properties,
+                                vk::MemoryPropertyFlags::DEVICE_LOCAL,
+                            )
+                            .unwrap(),
+                        )
+                        .build(),
+                    None,
+                )
+                .unwrap();
 
             self.ray_tracing
-                .bind_acceleration_structure_memory(&bind_top_as_memory_infos)
-                .expect("Failed to bind AS memory");
+                .bind_acceleration_structure_memory(&[
+                    vk::BindAccelerationStructureMemoryInfoNV::builder()
+                        .acceleration_structure(self.top_as)
+                        .memory(self.top_as_memory)
+                        .build(),
+                ])
+                .unwrap();
+
+            // let top_as_create_info = vk::AccelerationStructureCreateInfoNV {
+            //     s_type: vk::StructureType::ACCELERATION_STRUCTURE_CREATE_INFO_NV,
+            //     p_next: ptr::null(),
+            //     compacted_size: 0,
+            //     info: vk::AccelerationStructureInfoNV::builder()
+            //         .ty(vk::AccelerationStructureTypeNV::TOP_LEVEL)
+            //         .instance_count(instances.len() as u32)
+            //         .build(),
+            // };
+
+            // self.top_as = self
+            //     .ray_tracing
+            //     .create_acceleration_structure(&top_as_create_info, None)
+            //     .expect("Failed to create top AS.");
+
+            // let top_as_memory_requirements_info =
+            //     vk::AccelerationStructureMemoryRequirementsInfoNV {
+            //         s_type: vk::StructureType::ACCELERATION_STRUCTURE_MEMORY_REQUIREMENTS_INFO_NV,
+            //         p_next: ptr::null(),
+            //         ty: vk::AccelerationStructureMemoryRequirementsTypeNV::OBJECT,
+            //         acceleration_structure: self.top_as,
+            //     };
+
+            // let top_as_memory_requirements = self
+            //     .ray_tracing
+            //     .get_acceleration_structure_memory_requirements(&top_as_memory_requirements_info);
+
+            // let top_as_memory_allocate_info = vk::MemoryAllocateInfo {
+            //     s_type: vk::StructureType::MEMORY_ALLOCATE_INFO,
+            //     p_next: ptr::null(),
+            //     allocation_size: top_as_memory_requirements.memory_requirements.size,
+            //     memory_type_index: utility::general::find_memorytype_index(
+            //         &top_as_memory_requirements.memory_requirements,
+            //         &self.base.memory_properties,
+            //         vk::MemoryPropertyFlags::DEVICE_LOCAL,
+            //     )
+            //     .expect("Failed to find suitable AS memory type."),
+            // };
+
+            // self.top_as_memory = self
+            //     .base
+            //     .device
+            //     .allocate_memory(&top_as_memory_allocate_info, None)
+            //     .expect("Failed to allocate AS memory");
+
+            // let bind_top_as_memory_infos = [vk::BindAccelerationStructureMemoryInfoNV {
+            //     s_type: vk::StructureType::BIND_ACCELERATION_STRUCTURE_MEMORY_INFO_NV,
+            //     acceleration_structure: self.top_as,
+            //     memory: self.top_as_memory,
+            //     ..Default::default()
+            // }];
+
+            // self.ray_tracing
+            //     .bind_acceleration_structure_memory(&bind_top_as_memory_infos)
+            //     .expect("Failed to bind AS memory");
 
             // Build accleration structures
 
-            let bottom_as_size = bottom_as_memory_requirements.memory_requirements.size;
+            let bottom_as_size = {
+                let requirements = self
+                    .ray_tracing
+                    .get_acceleration_structure_memory_requirements(
+                        &vk::AccelerationStructureMemoryRequirementsInfoNV::builder()
+                            .acceleration_structure(self.bottom_as)
+                            .ty(vk::AccelerationStructureMemoryRequirementsTypeNV::BUILD_SCRATCH)
+                            .build(),
+                    );
+                requirements.memory_requirements.size
+            };
 
-            let top_as_size = top_as_memory_requirements.memory_requirements.size;
+            let top_as_size = {
+                let requirements = self
+                    .ray_tracing
+                    .get_acceleration_structure_memory_requirements(
+                        &vk::AccelerationStructureMemoryRequirementsInfoNV::builder()
+                            .acceleration_structure(self.top_as)
+                            .ty(vk::AccelerationStructureMemoryRequirementsTypeNV::BUILD_SCRATCH)
+                            .build(),
+                    );
+                requirements.memory_requirements.size
+            };
 
             let scratch_buffer_size = std::cmp::max(bottom_as_size, top_as_size);
             let scratch_buffer = BufferResource::new(
@@ -1265,55 +1383,46 @@ impl RayTracingApp {
                 self.base.clone(),
             );
 
-            let allocate_info = vk::CommandBufferAllocateInfo {
-                s_type: vk::StructureType::COMMAND_BUFFER_ALLOCATE_INFO,
-                p_next: ptr::null(),
-                command_buffer_count: 1,
-                command_pool: self.base.command_pool,
-                level: vk::CommandBufferLevel::PRIMARY,
-            };
+            let allocate_info = vk::CommandBufferAllocateInfo::builder()
+                .command_buffer_count(1)
+                .command_pool(self.base.command_pool)
+                .level(vk::CommandBufferLevel::PRIMARY)
+                .build();
 
             let command_buffers = self
                 .base
                 .device
                 .allocate_command_buffers(&allocate_info)
-                .expect("Failed to allocate command buffer.");
-
+                .unwrap();
             let build_command_buffer = command_buffers[0];
-
-            let command_buffer_begin_info = vk::CommandBufferBeginInfo {
-                s_type: vk::StructureType::COMMAND_BUFFER_BEGIN_INFO,
-                p_next: ptr::null(),
-                flags: vk::CommandBufferUsageFlags::ONE_TIME_SUBMIT,
-                ..Default::default()
-            };
 
             self.base
                 .device
-                .begin_command_buffer(build_command_buffer, &command_buffer_begin_info)
-                .expect("Failed to begin command buffer.");
+                .begin_command_buffer(
+                    build_command_buffer,
+                    &vk::CommandBufferBeginInfo::builder()
+                        .flags(vk::CommandBufferUsageFlags::ONE_TIME_SUBMIT)
+                        .build(),
+                )
+                .unwrap();
 
-            let memory_barrier = vk::MemoryBarrier {
-                s_type: vk::StructureType::MEMORY_BARRIER,
-                p_next: ptr::null(),
-                src_access_mask: vk::AccessFlags::ACCELERATION_STRUCTURE_WRITE_NV
-                    | vk::AccessFlags::ACCELERATION_STRUCTURE_READ_NV,
-                dst_access_mask: vk::AccessFlags::ACCELERATION_STRUCTURE_WRITE_NV
-                    | vk::AccessFlags::ACCELERATION_STRUCTURE_READ_NV,
-            };
-
-            let bottom_as_info = vk::AccelerationStructureInfoNV {
-                s_type: vk::StructureType::ACCELERATION_STRUCTURE_INFO_NV,
-                p_next: ptr::null(),
-                ty: vk::AccelerationStructureTypeNV::BOTTOM_LEVEL,
-                geometry_count: geometry.len() as u32,
-                p_geometries: geometry.as_ptr(),
-                ..Default::default()
-            };
+            let memory_barrier = vk::MemoryBarrier::builder()
+                .src_access_mask(
+                    vk::AccessFlags::ACCELERATION_STRUCTURE_WRITE_NV
+                        | vk::AccessFlags::ACCELERATION_STRUCTURE_READ_NV,
+                )
+                .dst_access_mask(
+                    vk::AccessFlags::ACCELERATION_STRUCTURE_WRITE_NV
+                        | vk::AccessFlags::ACCELERATION_STRUCTURE_READ_NV,
+                )
+                .build();
 
             self.ray_tracing.cmd_build_acceleration_structure(
                 build_command_buffer,
-                &bottom_as_info,
+                &vk::AccelerationStructureInfoNV::builder()
+                    .ty(vk::AccelerationStructureTypeNV::BOTTOM_LEVEL)
+                    .geometries(&geometry)
+                    .build(),
                 vk::Buffer::null(),
                 0,
                 false,
@@ -1333,17 +1442,12 @@ impl RayTracingApp {
                 &[],
             );
 
-            let top_as_info = vk::AccelerationStructureInfoNV {
-                s_type: vk::StructureType::ACCELERATION_STRUCTURE_INFO_NV,
-                p_next: ptr::null(),
-                ty: vk::AccelerationStructureTypeNV::TOP_LEVEL,
-                instance_count: instances.len() as u32,
-                ..Default::default()
-            };
-
             self.ray_tracing.cmd_build_acceleration_structure(
                 build_command_buffer,
-                &top_as_info,
+                &vk::AccelerationStructureInfoNV::builder()
+                    .ty(vk::AccelerationStructureTypeNV::TOP_LEVEL)
+                    .instance_count(instances.len() as u32)
+                    .build(),
                 instance_buffer.buffer,
                 0,
                 false,
@@ -1366,20 +1470,18 @@ impl RayTracingApp {
             self.base
                 .device
                 .end_command_buffer(build_command_buffer)
-                .expect("Failed to end command buffer.");
-
-            let submit_info = vk::SubmitInfo {
-                s_type: vk::StructureType::SUBMIT_INFO,
-                p_next: ptr::null(),
-                command_buffer_count: 1,
-                p_command_buffers: [build_command_buffer].as_ptr(),
-                ..Default::default()
-            };
+                .unwrap();
 
             self.base
                 .device
-                .queue_submit(self.base.present_queue, &[submit_info], vk::Fence::null())
-                .expect("Failed to submit queue.");
+                .queue_submit(
+                    self.base.present_queue,
+                    &[vk::SubmitInfo::builder()
+                        .command_buffers(&[build_command_buffer])
+                        .build()],
+                    vk::Fence::null(),
+                )
+                .expect("queue submit failed.");
 
             match self.base.device.queue_wait_idle(self.base.present_queue) {
                 Ok(_) => println!("Successfully built acceleration structures"),
@@ -1388,6 +1490,142 @@ impl RayTracingApp {
                     panic!("GPU ERROR");
                 }
             }
+
+            // let bottom_as_size = bottom_as_memory_requirements.memory_requirements.size;
+
+            // let top_as_size = top_as_memory_requirements.memory_requirements.size;
+
+            // let scratch_buffer_size = std::cmp::max(bottom_as_size, top_as_size);
+            // let scratch_buffer = BufferResource::new(
+            //     scratch_buffer_size,
+            //     vk::BufferUsageFlags::RAY_TRACING_NV,
+            //     vk::MemoryPropertyFlags::DEVICE_LOCAL,
+            //     self.base.clone(),
+            // );
+
+            // let allocate_info = vk::CommandBufferAllocateInfo {
+            //     s_type: vk::StructureType::COMMAND_BUFFER_ALLOCATE_INFO,
+            //     p_next: ptr::null(),
+            //     command_buffer_count: 1,
+            //     command_pool: self.base.command_pool,
+            //     level: vk::CommandBufferLevel::PRIMARY,
+            // };
+
+            // let command_buffers = self
+            //     .base
+            //     .device
+            //     .allocate_command_buffers(&allocate_info)
+            //     .expect("Failed to allocate command buffer.");
+
+            // let build_command_buffer = command_buffers[0];
+
+            // let command_buffer_begin_info = vk::CommandBufferBeginInfo {
+            //     s_type: vk::StructureType::COMMAND_BUFFER_BEGIN_INFO,
+            //     p_next: ptr::null(),
+            //     flags: vk::CommandBufferUsageFlags::ONE_TIME_SUBMIT,
+            //     ..Default::default()
+            // };
+
+            // self.base
+            //     .device
+            //     .begin_command_buffer(build_command_buffer, &command_buffer_begin_info)
+            //     .expect("Failed to begin command buffer.");
+
+            // let memory_barrier = vk::MemoryBarrier {
+            //     s_type: vk::StructureType::MEMORY_BARRIER,
+            //     p_next: ptr::null(),
+            //     src_access_mask: vk::AccessFlags::ACCELERATION_STRUCTURE_WRITE_NV
+            //         | vk::AccessFlags::ACCELERATION_STRUCTURE_READ_NV,
+            //     dst_access_mask: vk::AccessFlags::ACCELERATION_STRUCTURE_WRITE_NV
+            //         | vk::AccessFlags::ACCELERATION_STRUCTURE_READ_NV,
+            // };
+
+            // let bottom_as_info = vk::AccelerationStructureInfoNV {
+            //     s_type: vk::StructureType::ACCELERATION_STRUCTURE_INFO_NV,
+            //     p_next: ptr::null(),
+            //     ty: vk::AccelerationStructureTypeNV::BOTTOM_LEVEL,
+            //     geometry_count: geometry.len() as u32,
+            //     p_geometries: geometry.as_ptr(),
+            //     ..Default::default()
+            // };
+
+            // self.ray_tracing.cmd_build_acceleration_structure(
+            //     build_command_buffer,
+            //     &bottom_as_info,
+            //     vk::Buffer::null(),
+            //     0,
+            //     false,
+            //     self.bottom_as,
+            //     vk::AccelerationStructureNV::null(),
+            //     scratch_buffer.buffer,
+            //     0,
+            // );
+
+            // self.base.device.cmd_pipeline_barrier(
+            //     build_command_buffer,
+            //     vk::PipelineStageFlags::ACCELERATION_STRUCTURE_BUILD_NV,
+            //     vk::PipelineStageFlags::ACCELERATION_STRUCTURE_BUILD_NV,
+            //     vk::DependencyFlags::empty(),
+            //     &[memory_barrier],
+            //     &[],
+            //     &[],
+            // );
+
+            // let top_as_info = vk::AccelerationStructureInfoNV {
+            //     s_type: vk::StructureType::ACCELERATION_STRUCTURE_INFO_NV,
+            //     p_next: ptr::null(),
+            //     ty: vk::AccelerationStructureTypeNV::TOP_LEVEL,
+            //     instance_count: instances.len() as u32,
+            //     ..Default::default()
+            // };
+
+            // self.ray_tracing.cmd_build_acceleration_structure(
+            //     build_command_buffer,
+            //     &top_as_info,
+            //     instance_buffer.buffer,
+            //     0,
+            //     false,
+            //     self.top_as,
+            //     vk::AccelerationStructureNV::null(),
+            //     scratch_buffer.buffer,
+            //     0,
+            // );
+
+            // self.base.device.cmd_pipeline_barrier(
+            //     build_command_buffer,
+            //     vk::PipelineStageFlags::ACCELERATION_STRUCTURE_BUILD_NV,
+            //     vk::PipelineStageFlags::ACCELERATION_STRUCTURE_BUILD_NV,
+            //     vk::DependencyFlags::empty(),
+            //     &[memory_barrier],
+            //     &[],
+            //     &[],
+            // );
+
+            // self.base
+            //     .device
+            //     .end_command_buffer(build_command_buffer)
+            //     .expect("Failed to end command buffer.");
+
+            // let submit_info = vk::SubmitInfo {
+            //     s_type: vk::StructureType::SUBMIT_INFO,
+            //     p_next: ptr::null(),
+            //     command_buffer_count: 1,
+            //     p_command_buffers: [build_command_buffer].as_ptr(),
+            //     ..Default::default()
+            // };
+
+            // self.base
+            //     .device
+            //     .queue_submit(self.base.present_queue, &[submit_info], vk::Fence::null())
+            //     .expect("Failed to submit queue.");
+
+            // match self.base.device.queue_wait_idle(self.base.present_queue) {
+            //     Ok(_) => println!("Successfully built acceleration structures"),
+            //     Err(err) => {
+            //         println!("Failed to build acceleration structures: {:?}", err);
+            //         panic!("GPU ERROR");
+            //     }
+            // }
 
             self.base
                 .device
@@ -1818,6 +2056,51 @@ impl RayTracingApp {
                 .update_descriptor_sets(&[accel_write, image_write, buffer_write], &[]);
         }
     }
+
+    fn release(&mut self) {
+        unsafe {
+            self.base.wait_device_idle();
+
+            self.ray_tracing
+                .destroy_acceleration_structure(self.top_as, None);
+            self.base.device.free_memory(self.top_as_memory, None);
+
+            self.ray_tracing
+                .destroy_acceleration_structure(self.bottom_as, None);
+            self.base.device.free_memory(self.bottom_as_memory, None);
+
+            self.base
+                .device
+                .destroy_descriptor_pool(self.descriptor_pool, None);
+
+            self.shader_binding_table = None;
+
+            self.color0_buffer = None;
+            self.color1_buffer = None;
+            self.color2_buffer = None;
+
+            self.base.device.destroy_pipeline(self.pipeline, None);
+            self.base
+                .device
+                .destroy_pipeline_layout(self.pipeline_layout, None);
+            self.base
+                .device
+                .destroy_descriptor_set_layout(self.descriptor_set_layout, None);
+
+            self.base
+                .device
+                .destroy_shader_module(self.rgen_shader_module, None);
+            self.base
+                .device
+                .destroy_shader_module(self.chit_shader_module, None);
+            self.base
+                .device
+                .destroy_shader_module(self.miss_shader_module, None);
+            self.base
+                .device
+                .destroy_shader_module(self.lib_shader_module, None);
+        }
+    }
 }
 
 fn main() {
@@ -1858,7 +2141,9 @@ fn main() {
             " max_descriptor_set_acceleration_structures: {}",
             props_rt.max_descriptor_set_acceleration_structures
         );
-    }
 
+        vulkan_renderer.wait_device_idle();
+        app.release();
+    }
     // program_proc.main_loop(vulkan_renderer);
 }
